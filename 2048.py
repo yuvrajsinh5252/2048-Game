@@ -59,12 +59,17 @@ def is_win():
                 return True
             
 def get_max():
-    max = x[0][0]
+    ans = 1
     for i in range(4):
         for j in range(4):
-            if(x[i][j] > max):
+            if (x[i][j] != " " and ans == 1):
                 max = x[i][j]
-    print(max)
+                ans = 0 
+                break
+            if(x[i][j] != " " ):
+                if (x[i][j] > max):
+                    max = x[i][j]
+    return max
 
 def empty():
     for i in range(4):
@@ -205,14 +210,12 @@ while(True):
             continue
 
     if (not empty()):
-        print("[bold red]YOU LOSE...[/]")
-        print("\n[bold brown]Your max score is -> [/]\n")
-        print(f"[bold white]The max value achieved is {get_max()}[/]")
+        print("\n[bold red]YOU LOSE...\n[/]")
+        print(f"[bold white]The max value achieved is {get_max()}[/]\n")
         break
     if (is_win()):
-        print("[bold green]YOU WIN...\n[/]")
-        print("\n[bold brown]Your max score is -> [/]\n")
-        print(f"[bold white]The max value achieved is {get_max()}[/]")
+        print("\n[bold green]YOU WIN...\n[/]")
+        print(f"[bold white]The max value achieved is {get_max()}[/]\n")
         break
     clear()
     if (direction != ""):
