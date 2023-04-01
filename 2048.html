@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>2048</title>
+    <link rel="shortcut icon" type="x-icon" href="2048.png">
+    <link rel="stylesheet" href="2048.css">
+</head>
+<body>
+    <div class="title">
+        <h1 class="head">2048</h1>
+        <div class="scores-improv">    
+            <div class="Best-score">
+                <h1>Best Score</h1>
+                <h1 id="Best-score">0</h1>
+            </div>
+            <div class="score">
+                <h1>Score</h1>
+                <h1 id="score">0</h1>
+            </div>
+        </div>
+    </div>
+    <div class="merge">
+        <div class="grid-container" id="Container">
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+            <div class="item"></div>
+        </div>
+        <div class="result">
+            <h1 class="font-result">You Win</h1>
+            <div class="play-button"><button class="play-again"><h3 id="play">Try Again</h3></button></div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div><span class="h3">How to play:</span>
+            <span class="instruct">Use your arrow key to move the tiles,tiles with same value will get merge,
+                get <span class="bold">2048</span> on anyone tile and win.
+            </span>
+        </div>
+    </div>
+    <div class="reset-container">
+            <button class="reset" id="reset"><h2>New Game</h2></button>
+    </div>
+    <script src="2048.js"></script>
+    <footer>
+        Created by <span class="based">Yuvrajsinh Gohil</span>. Inspired from 2048 by <span class="based">
+            <a  target="_blank" href="http://gabrielecirulli.com/">Gabriele Cirulli</a>
+        </span>  
+    </footer>
+</body>
+</html>
