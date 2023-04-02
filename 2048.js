@@ -1,15 +1,7 @@
 let brightness = new Map();
-brightness.set("2", 85);
-brightness.set("4", 82);
-brightness.set("8", 79);
-brightness.set("16", 76);
-brightness.set("32", 73);
-brightness.set("64", 70);
-brightness.set("128", 67);
-brightness.set("256", 64);
-brightness.set("512", 61);
-brightness.set("1024", 58);
-brightness.set("2048", 55);
+brightness.set("2", 85);brightness.set("4", 81);brightness.set("8", 77);brightness.set("16", 73);brightness.set("32", 69);
+brightness.set("64", 65);brightness.set("128", 61);brightness.set("256", 57);brightness.set("512", 53);brightness.set("1024", 49);
+brightness.set("2048", 45);
 
 let score = localStorage.getItem("1");
     document.getElementById("Best-score").innerHTML = score;
@@ -106,7 +98,7 @@ function upper_move() {
                     if (value[k][i] != " ") {
                         value[j][i] = value[k][i];
                         document.getElementById(`${k * 4 + (i + 1)}`).setAttribute("id", `${j * 4 + (i + 1)}`);
-                        document.getElementById(`${j * 4 + (i + 1)}`).style = `--x: ${j};--y: ${i}`;
+                        document.getElementById(`${j * 4 + (i + 1)}`).style = `--x: ${j};--y: ${i}`;    
                         value[k][i] = " ";
                         break;
                     }
@@ -117,7 +109,7 @@ function upper_move() {
             if (value[j][i] != " " && value[j][i] == value[j + 1][i]) {
                 value[j + 1][i] += value[j][i];
                 value[j][i] = " ";
-                document.getElementById(`${(j + 1) * 4 + (i + 1)}`).style = `--x: ${j};--y: ${i}`;
+                document.getElementById(`${(j + 1) * 4 + (i + 1)}`).style = `--x: ${j};--y: ${i};`;
                 document.getElementById(`${(j + 1) * 4 + (i + 1)}`).innerHTML = value[j + 1][i];
                 document.getElementById(`${j * 4 + (i + 1)}`).remove();
                 add += value[j + 1][i];
@@ -262,6 +254,22 @@ function right_move() {
     }
 }
 
+function get_input() {
+    window.addEventListener("keydown",input, {once: true});
+}
+
+function get_tiles_colored() {
+    for(let i = 0; i < 4; i++) {
+        for(let j = 0; j < 4; j++) {
+            let element = document.getElementById(`${i * 4 + (j + 1)}`);
+            if (element != null) {
+                let color = brightness.get(element.innerHTML);
+                document.getElementById(`${i * 4 + (j + 1)}`).style = `background: hsl(180, 80%, ${color}%);--x: ${i};--y: ${j}`;
+            }
+        }
+    }
+}
+
 function reset() {
     value = [[" "," "," "," "], [" "," "," "," "], [" "," "," "," "], [" "," "," "," "]];
     for (let i = 1; i <= 16; i++) {
@@ -281,31 +289,14 @@ function reset() {
     document.getElementsByClassName("result")[0].style = (`opacity: ${0}%; visibility: hidden;`);
     random_num();
     random_num();
+    get_tiles_colored();
     get_input();
 }    
 
 random_num();
 random_num();
-get_input();
-
-function get_tiles_colored() {
-    for(let i = 0; i < 4; i++) {
-        for(let j = 0; j < 4; j++) {
-            let element = document.getElementById(`${i * 4 + (j + 1)}`);
-            if (element != null) {
-                let color = brightness.get(element.innerHTML);
-                document.getElementById(`${i * 4 + (j + 1)}`).style = `background: hsl(180, 80%, ${color}%);--x: ${i};--y: ${j}`;
-            }
-        }
-    }
-}
-
 get_tiles_colored();
-
-function get_input() {
-    window.addEventListener("keydown",input, {once: true});
-    window.addEventListener("ontouchmove",input, {once: true});
-}
+get_input();
 
 function input(e) {
     if (e.key === "ArrowDown") {
