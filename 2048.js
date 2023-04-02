@@ -1,14 +1,25 @@
 let brightness = new Map();
-brightness.set("2", 85);brightness.set("4", 81);brightness.set("8", 77);brightness.set("16", 73);brightness.set("32", 69);
-brightness.set("64", 65);brightness.set("128", 61);brightness.set("256", 57);brightness.set("512", 53);brightness.set("1024", 49);
+brightness.set("2", 85); brightness.set("4", 81); brightness.set("8", 77); brightness.set("16", 73); brightness.set("32", 69);
+brightness.set("64", 65); brightness.set("128", 61); brightness.set("256", 57); brightness.set("512", 53); brightness.set("1024", 49);
 brightness.set("2048", 45);
 
 let score = localStorage.getItem("1");
-    document.getElementById("Best-score").innerHTML = score;
+document.getElementById("Best-score").innerHTML = score;
 
-let value = [[" "," "," "," "], [" "," "," "," "], [" "," "," "," "], [" "," "," "," "]];
+let value = [[" ", " ", " ", " "], [" ", " ", " ", " "], [" ", " ", " ", " "], [" ", " ", " ", " "]];
 
 let add = 0;
+
+const grow_keyframes = [
+    {
+        opacity: 1,
+        scale: 1
+    },
+    {
+        opacity: 1,
+        scale: 1.1
+    }
+]
 
 function empty() {
     let temp = 0;
@@ -18,7 +29,7 @@ function empty() {
                 return true;
         }
     }
-    if (temp === 0) 
+    if (temp === 0)
         return false;
 }
 
@@ -26,7 +37,7 @@ function is_move() {
     let ans = 0;
     for (let i = 0; i < 4; i++) {
         for (let j = 0; j < 3; j++) {
-            if (value[i][j] === value[i][j + 1] || value[j][i] === value[j + 1][i]){
+            if (value[i][j] === value[i][j + 1] || value[j][i] === value[j + 1][i]) {
                 ans = 1;
                 return true;
             }
@@ -38,7 +49,7 @@ function is_move() {
             document.getElementsByClassName("grid-container")[0].style = `opacity: ${`${50}%`}`;
             document.getElementsByClassName("result")[0].style = (`opacity: ${100}%; visibility: visible;`);
             return false;
-        } else 
+        } else
             return true;
     }
 }
@@ -61,31 +72,31 @@ function random_num() {
         let ans = false;
         let index_row = Math.floor(Math.random() * 4);
         let index_col = Math.floor(Math.random() * 4);
-        for(let i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
             for (let j = 0; j < 4; j++) {
                 if (i == index_row && j == index_col && value[i][j] == " ") {
                     let num = Math.floor(Math.random() * 5);
-                    if (num <= 0.5) 
+                    if (num <= 0.5)
                         num = 4;
-                    else 
+                    else
                         num = 2;
-                    value[i][j] = num; 
+                    value[i][j] = num;
 
                     let g1 = [];
                     g1 = document.getElementsByClassName("grid-container");
                     let g = document.createElement('div');
                     g.setAttribute("class", "tile");
-                    g.setAttribute("id",`${i * 4 + (j + 1)}`);
+                    g.setAttribute("id", `${i * 4 + (j + 1)}`);
                     g.innerHTML = num;
                     g1[0].appendChild(g);
 
-                    document.getElementById(`${i * 4 + (j + 1)}`).innerHTML = num;                    
+                    document.getElementById(`${i * 4 + (j + 1)}`).innerHTML = num;
                     document.getElementById(`${i * 4 + (j + 1)}`).style = `--x: ${i};--y: ${j}`;
                     return;
                 }
             }
-        } 
-        if (ans == false) 
+        }
+        if (ans == false)
             random_num();
     }
 }
@@ -98,7 +109,7 @@ function upper_move() {
                     if (value[k][i] != " ") {
                         value[j][i] = value[k][i];
                         document.getElementById(`${k * 4 + (i + 1)}`).setAttribute("id", `${j * 4 + (i + 1)}`);
-                        document.getElementById(`${j * 4 + (i + 1)}`).style = `--x: ${j};--y: ${i}`;    
+                        document.getElementById(`${j * 4 + (i + 1)}`).style = `--x: ${j};--y: ${i}`;
                         value[k][i] = " ";
                         break;
                     }
@@ -109,8 +120,10 @@ function upper_move() {
             if (value[j][i] != " " && value[j][i] == value[j + 1][i]) {
                 value[j + 1][i] += value[j][i];
                 value[j][i] = " ";
-                document.getElementById(`${(j + 1) * 4 + (i + 1)}`).style = `--x: ${j};--y: ${i};`;
-                document.getElementById(`${(j + 1) * 4 + (i + 1)}`).innerHTML = value[j + 1][i];
+                let elem = document.getElementById(`${(j + 1) * 4 + (i + 1)}`);
+                elem.style = `--x: ${j};--y: ${i};`;
+                elem.innerHTML = value[j + 1][i];
+                elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
                 document.getElementById(`${j * 4 + (i + 1)}`).remove();
                 add += value[j + 1][i];
             }
@@ -150,8 +163,10 @@ function lower_move() {
             if (value[j][i] != " " && value[j][i] == value[j - 1][i]) {
                 value[j - 1][i] += value[j][i];
                 value[j][i] = " ";
-                document.getElementById(`${(j - 1) * 4 + (i + 1)}`).style = `--x: ${j - 1};--y: ${i}`;
-                document.getElementById(`${(j - 1) * 4 + (i + 1)}`).innerHTML = value[j - 1][i];
+                let elem = document.getElementById(`${(j - 1) * 4 + (i + 1)}`);
+                elem.style = `--x: ${j - 1};--y: ${i}`;
+                elem.innerHTML = value[j - 1][i];
+                elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
                 document.getElementById(`${j * 4 + (i + 1)}`).remove();
                 add += value[j - 1][i];
             }
@@ -191,8 +206,10 @@ function left_move() {
             if (value[i][j] != " " && value[i][j] == value[i][j + 1]) {
                 value[i][j + 1] += value[i][j];
                 value[i][j] = " ";
-                document.getElementById(`${i * 4 + (j + 2)}`).style = `--x: ${i};--y: ${j + 1}`;
-                document.getElementById(`${i * 4 + (j + 2)}`).innerHTML = value[i][j + 1];
+                let elem = document.getElementById(`${i * 4 + (j + 2)}`);
+                elem.style = `--x: ${i};--y: ${j + 1}`;
+                elem.innerHTML = value[i][j + 1];
+                elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
                 document.getElementById(`${i * 4 + (j + 1)}`).remove();
                 add += value[i][j + 1];
             }
@@ -232,8 +249,10 @@ function right_move() {
             if (value[i][j] != " " && value[i][j] == value[i][j - 1]) {
                 value[i][j - 1] += value[i][j];
                 value[i][j] = " ";
-                document.getElementById(`${i * 4 + (j)}`).style = `--x: ${i};--y: ${j - 1}`;
-                document.getElementById(`${i * 4 + (j)}`).innerHTML = value[i][j - 1];
+                let elem = document.getElementById(`${i * 4 + (j)}`);
+                elem.style = `--x: ${i};--y: ${j - 1}`;
+                elem.innerHTML = value[i][j - 1];
+                elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
                 document.getElementById(`${i * 4 + (j + 1)}`).remove();
                 add += value[i][j - 1];
             }
@@ -255,12 +274,12 @@ function right_move() {
 }
 
 function get_input() {
-    window.addEventListener("keydown",input, {once: true});
+    window.addEventListener("keydown", input, { once: true });
 }
 
 function get_tiles_colored() {
-    for(let i = 0; i < 4; i++) {
-        for(let j = 0; j < 4; j++) {
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
             let element = document.getElementById(`${i * 4 + (j + 1)}`);
             if (element != null) {
                 let color = brightness.get(element.innerHTML);
@@ -271,7 +290,7 @@ function get_tiles_colored() {
 }
 
 function reset() {
-    value = [[" "," "," "," "], [" "," "," "," "], [" "," "," "," "], [" "," "," "," "]];
+    value = [[" ", " ", " ", " "], [" ", " ", " ", " "], [" ", " ", " ", " "], [" ", " ", " ", " "]];
     for (let i = 1; i <= 16; i++) {
         let remov_ele = document.getElementById(`${i}`);
         if (remov_ele != null) {
@@ -279,7 +298,7 @@ function reset() {
         }
     }
     if (localStorage.getItem("1") < add) {
-        localStorage.setItem("1",add);        
+        localStorage.setItem("1", add);
     }
     document.getElementById("score").innerHTML = 0;
     add = 0;
@@ -291,7 +310,7 @@ function reset() {
     random_num();
     get_tiles_colored();
     get_input();
-}    
+}
 
 random_num();
 random_num();
@@ -302,19 +321,19 @@ function input(e) {
     if (e.key === "ArrowDown") {
         lower_move();
         random_num();
-    }   
+    }
     else if (e.key === "ArrowUp") {
         upper_move();
         random_num();
     }
-    else if (e.key === "ArrowLeft") { 
+    else if (e.key === "ArrowLeft") {
         left_move();
         random_num();
     }
     else if (e.key === "ArrowRight") {
         right_move();
         random_num();
-    } 
+    }
     get_tiles_colored();
     document.getElementById("score").innerHTML = add;
     if (localStorage.getItem("1", add) < add) {
