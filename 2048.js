@@ -1,25 +1,16 @@
 let brightness = new Map();
 brightness.set("2", 85); brightness.set("4", 81); brightness.set("8", 77); brightness.set("16", 73); brightness.set("32", 69);
-brightness.set("64", 65); brightness.set("128", 61); brightness.set("256", 57); brightness.set("512", 53); brightness.set("1024", 49);
-brightness.set("2048", 45);
+brightness.set("64", 65); brightness.set("128", 61); brightness.set("256", 57); brightness.set("512", 53); brightness.set("1024", 49);brightness.set("2048", 45);
 
+let add = 0;
+
+localStorage.setItem("1", add);
 let score = localStorage.getItem("1");
 document.getElementById("Best-score").innerHTML = score;
 
 let value = [[" ", " ", " ", " "], [" ", " ", " ", " "], [" ", " ", " ", " "], [" ", " ", " ", " "]];
 
-let add = 0;
-
-const grow_keyframes = [
-    {
-        opacity: 1,
-        scale: 1
-    },
-    {
-        opacity: 1,
-        scale: 1.1
-    }
-]
+const grow_keyframes = [{opacity: 1,scale: 1},{opacity: 1,scale: 1.1}]
 
 function empty() {
     let temp = 0;
@@ -317,6 +308,17 @@ random_num();
 get_tiles_colored();
 get_input();
 
+function check_game() {
+    get_tiles_colored();
+    document.getElementById("score").innerHTML = add;
+    if (localStorage.getItem("1", add) < add) {
+        document.getElementById("Best-score").innerHTML = add;
+    }
+    if (!is_win() && is_move()) {
+        get_input();
+    }
+}
+
 function input(e) {
     if (e.key === "ArrowDown") {
         lower_move();
@@ -334,14 +336,7 @@ function input(e) {
         right_move();
         random_num();
     }
-    get_tiles_colored();
-    document.getElementById("score").innerHTML = add;
-    if (localStorage.getItem("1", add) < add) {
-        document.getElementById("Best-score").innerHTML = add;
-    }
-    if (!is_win() && is_move()) {
-        get_input();
-    }
+    check_game();
 }
 
 document.getElementById("reset").onclick = reset;
