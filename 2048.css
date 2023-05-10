@@ -174,10 +174,6 @@ footer {
 }
 
 @media (max-width: 470px) {
-  body {
-    overflow: scroll;
-    height: 100vh;
-  }
   .arrow_key {
     display: flex;
     flex-direction: column;
@@ -213,6 +209,5 @@ footer {
     display: flex;
     flex-direction: column;
     width: 350px;
-    top: 100%;
   }
 }
