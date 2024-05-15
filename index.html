@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <title>2048</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0 shrink-to-fit=no">
     <link rel="shortcut icon" type="x-icon" href="2048.png">
     <link rel="stylesheet" href="2048.css">
 </head>
+
 <body>
     <div class="title">
         <h1 class="head">2048</h1>
-        <div class="scores-improv">    
+        <div class="scores-improv">
             <div class="Best-score">
                 <h1>Best Score</h1>
                 <h1 id="Best-score">0</h1>
@@ -41,7 +43,9 @@
         </div>
         <div class="result">
             <h1 class="font-result">You Win</h1>
-            <div class="play-button"><button class="play-again"><h3 id="play">Try Again</h3></button></div>
+            <div class="play-button"><button class="play-again">
+                    <h3 id="play">Try Again</h3>
+                </button></div>
         </div>
     </div>
     <div class="bottom">
@@ -52,31 +56,40 @@
         </div>
     </div>
     <div class="reset-container">
-            <button class="reset" id="reset"><h2>New Game</h2></button>
+        <button class="reset" id="reset">
+            <h2>New Game</h2>
+        </button>
     </div>
     <div class="arrow_key">
-        <button onclick="upper_move();random_num();check_game();" id="up"><img src="https://img.icons8.com/windows/32/null/long-arrow-up.png"/></button>
+        <button onclick="upper_move();random_num();check_game();" id="up"><img
+                src="https://img.icons8.com/windows/32/null/long-arrow-up.png" /></button>
         <div>
-            <button onclick="left_move();random_num();check_game();" id="left"><img src="https://img.icons8.com/windows/32/null/long-arrow-left.png"/></button>
-            <button onclick="lower_move();random_num();check_game();" id="down"><img src="https://img.icons8.com/windows/32/null/long-arrow-down.png"/></button>
-            <button onclick="right_move();random_num();check_game();" id="right"><img src="https://img.icons8.com/windows/32/null/long-arrow-right.png"/></button>
+            <button onclick="left_move();random_num();check_game();" id="left"><img
+                    src="https://img.icons8.com/windows/32/null/long-arrow-left.png" /></button>
+            <button onclick="lower_move();random_num();check_game();" id="down"><img
+                    src="https://img.icons8.com/windows/32/null/long-arrow-down.png" /></button>
+            <button onclick="right_move();random_num();check_game();" id="right"><img
+                    src="https://img.icons8.com/windows/32/null/long-arrow-right.png" /></button>
         </div>
     </div>
     <div>
     </div>
     <footer>
         <div class="links">
-            <a href="https://github.com/yuvrajsinh5252" target="_blank"><img src="https://img.icons8.com/glyph-neue/64/null/github.png"/></a>
-            <a href="https://www.linkedin.com/in/yuvrajsinh-gohil-015623258/" target="_blank"><img src="https://img.icons8.com/windows/64/null/linkedin.png"/></a>
-            <a href="" target="_blank"><img src="https://img.icons8.com/windows/64/null/twitter-squared--v2.png"/></a>
-            <a href="" target="_blank"><img src="https://img.icons8.com/ios-filled/60/null/discord-logo.png"/></a>
-         </div>
+            <a href="https://github.com/yuvrajsinh5252" target="_blank"><img
+                    src="https://img.icons8.com/glyph-neue/64/null/github.png" /></a>
+            <a href="https://www.linkedin.com/in/yuvrajsinh-gohil-015623258/" target="_blank"><img
+                    src="https://img.icons8.com/windows/64/null/linkedin.png" /></a>
+            <a href="" target="_blank"><img src="https://img.icons8.com/windows/64/null/twitter-squared--v2.png" /></a>
+            <a href="" target="_blank"><img src="https://img.icons8.com/ios-filled/60/null/discord-logo.png" /></a>
+        </div>
         <div class="description">
             Created by <span class="based">Yuvrajsinh Gohil</span>. Inspired from 2048 by <span class="based">
-                <a  target="_blank" href="http://gabrielecirulli.com/">Gabriele Cirulli</a>
-            </span> 
-        </div> 
+                <a target="_blank" href="http://gabrielecirulli.com/">Gabriele Cirulli</a>
+            </span>
+        </div>
     </footer>
     <script src="2048.js"></script>
 </body>
+
 </html>

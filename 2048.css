@@ -128,7 +128,8 @@ body {
 .instruct {
   font-weight: 100;
 }
-.h3, .bold {
+.h3,
+.bold {
   font-weight: 600;
 }
 .reset-container {
@@ -193,9 +194,12 @@ footer {
   }
   :root {
     --cell-size: 74px;
-    --multiply: 86.70px;
+    --multiply: 86.7px;
   }
-  .title, .bottom, .reset-container, footer {
+  .title,
+  .bottom,
+  .reset-container,
+  footer {
     width: 335px;
   }
   .head {
