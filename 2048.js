@@ -36,6 +36,59 @@ const MIN_SWIPE = 30;
 
 let tilesMoved = false;
 
+// Add after the global variables
+let gameHistory = [];
+const MAX_HISTORY = 50; // Maximum number of states to store
+
+function saveGameState() {
+  const state = {
+    value: value.map((row) => [...row]),
+    add: add,
+    tiles: Array.from(document.getElementsByClassName("tile")).map((tile) => ({
+      id: tile.id,
+      innerHTML: tile.innerHTML,
+      style: tile.getAttribute("style"),
+    })),
+  };
+  gameHistory.push(state);
+  if (gameHistory.length > MAX_HISTORY) {
+    gameHistory.shift();
+  }
+}
+
+function undo() {
+  if (gameHistory.length === 0) return;
+
+  const previousState = gameHistory.pop();
+
+  // Restore grid values
+  value = previousState.value.map((row) => [...row]);
+  add = previousState.add;
+
+  // Remove current tiles
+  const tiles = document.getElementsByClassName("tile");
+  while (tiles.length > 0) {
+    tiles[0].remove();
+  }
+
+  // Restore tiles
+  const container = document.getElementsByClassName("grid-container")[0];
+  previousState.tiles.forEach((tileData) => {
+    const tile = document.createElement("div");
+    tile.setAttribute("class", "tile");
+    tile.setAttribute("id", tileData.id);
+    tile.innerHTML = tileData.innerHTML;
+    tile.setAttribute("style", tileData.style);
+    container.appendChild(tile);
+  });
+
+  // Update score
+  document.getElementById("score").innerHTML = add;
+
+  // Re-enable input
+  get_input();
+}
+
 function empty() {
   let temp = 0;
   for (let i = 0; i < 4; i++) {
@@ -410,14 +463,28 @@ function check_game() {
   }
 }
 
+// Modify the input function to save state before each move
 function input(e) {
   let moved = false;
+  if (
+    e.key === "ArrowDown" ||
+    e.key === "ArrowUp" ||
+    e.key === "ArrowLeft" ||
+    e.key === "ArrowRight"
+  ) {
+    saveGameState();
+  }
+
   if (e.key === "ArrowDown") moved = lower_move();
   else if (e.key === "ArrowUp") moved = upper_move();
   else if (e.key === "ArrowLeft") moved = left_move();
   else if (e.key === "ArrowRight") moved = right_move();
 
-  if (moved) random_num();
+  if (!moved) {
+    gameHistory.pop(); // Remove saved state if no move was made
+  } else {
+    random_num();
+  }
   check_game();
 }
 
@@ -426,6 +493,7 @@ function handleTouchStart(evt) {
   touchStartY = evt.touches[0].clientY;
 }
 
+// Modify handleTouchEnd to save state before each move
 function handleTouchEnd(evt) {
   if (!touchStartX || !touchStartY) return;
 
@@ -435,14 +503,13 @@ function handleTouchEnd(evt) {
   let deltaX = touchEndX - touchStartX;
   let deltaY = touchEndY - touchStartY;
 
-  // Reset touch coordinates
   touchStartX = 0;
   touchStartY = 0;
 
-  // Ignore small movements
   if (Math.abs(deltaX) < MIN_SWIPE && Math.abs(deltaY) < MIN_SWIPE) return;
 
-  // Determine direction based on larger delta
+  saveGameState();
+
   let moved = false;
   if (Math.abs(deltaX) > Math.abs(deltaY)) {
     if (deltaX > 0) moved = right_move();
@@ -452,7 +519,9 @@ function handleTouchEnd(evt) {
     else moved = upper_move();
   }
 
-  if (moved) {
+  if (!moved) {
+    gameHistory.pop();
+  } else {
     random_num();
   }
   check_game();
@@ -463,3 +532,11 @@ document.addEventListener("touchend", handleTouchEnd, false);
 
 document.getElementById("reset").onclick = reset;
 document.getElementsByClassName("play-again")[0].onclick = reset;
+
+// Add at the end of the file
+document.addEventListener("keydown", function (e) {
+  if (e.ctrlKey && e.key === "z") {
+    undo();
+    e.preventDefault();
+  }
+});
