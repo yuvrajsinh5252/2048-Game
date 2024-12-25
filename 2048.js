@@ -36,9 +36,8 @@ const MIN_SWIPE = 30;
 
 let tilesMoved = false;
 
-// Add after the global variables
 let gameHistory = [];
-const MAX_HISTORY = 50; // Maximum number of states to store
+const MAX_HISTORY = 50;
 
 function saveGameState() {
   const state = {
@@ -61,17 +60,14 @@ function undo() {
 
   const previousState = gameHistory.pop();
 
-  // Restore grid values
   value = previousState.value.map((row) => [...row]);
   add = previousState.add;
 
-  // Remove current tiles
   const tiles = document.getElementsByClassName("tile");
   while (tiles.length > 0) {
     tiles[0].remove();
   }
 
-  // Restore tiles
   const container = document.getElementsByClassName("grid-container")[0];
   previousState.tiles.forEach((tileData) => {
     const tile = document.createElement("div");
@@ -82,10 +78,7 @@ function undo() {
     container.appendChild(tile);
   });
 
-  // Update score
   document.getElementById("score").innerHTML = add;
-
-  // Re-enable input
   get_input();
 }
 
@@ -463,7 +456,6 @@ function check_game() {
   }
 }
 
-// Modify the input function to save state before each move
 function input(e) {
   let moved = false;
   if (
@@ -480,11 +472,8 @@ function input(e) {
   else if (e.key === "ArrowLeft") moved = left_move();
   else if (e.key === "ArrowRight") moved = right_move();
 
-  if (!moved) {
-    gameHistory.pop(); // Remove saved state if no move was made
-  } else {
-    random_num();
-  }
+  if (!moved) gameHistory.pop();
+  else random_num();
   check_game();
 }
 
@@ -493,7 +482,6 @@ function handleTouchStart(evt) {
   touchStartY = evt.touches[0].clientY;
 }
 
-// Modify handleTouchEnd to save state before each move
 function handleTouchEnd(evt) {
   if (!touchStartX || !touchStartY) return;
 
@@ -519,11 +507,8 @@ function handleTouchEnd(evt) {
     else moved = upper_move();
   }
 
-  if (!moved) {
-    gameHistory.pop();
-  } else {
-    random_num();
-  }
+  if (!moved) gameHistory.pop();
+  else random_num();
   check_game();
 }
 
@@ -533,7 +518,6 @@ document.addEventListener("touchend", handleTouchEnd, false);
 document.getElementById("reset").onclick = reset;
 document.getElementsByClassName("play-again")[0].onclick = reset;
 
-// Add at the end of the file
 document.addEventListener("keydown", function (e) {
   if (e.ctrlKey && e.key === "z") {
     undo();
