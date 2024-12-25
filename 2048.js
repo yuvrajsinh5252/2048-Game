@@ -30,6 +30,10 @@ const grow_keyframes = [
   { opacity: 1, scale: 1.1 },
 ];
 
+let touchStartX = 0;
+let touchStartY = 0;
+const MIN_SWIPE = 30; // minimum swipe distance
+
 function empty() {
   let temp = 0;
   for (let i = 0; i < 4; i++) {
@@ -400,6 +404,48 @@ function input(e) {
   }
   check_game();
 }
+
+function handleTouchStart(evt) {
+  touchStartX = evt.touches[0].clientX;
+  touchStartY = evt.touches[0].clientY;
+}
+
+function handleTouchEnd(evt) {
+  if (!touchStartX || !touchStartY) return;
+
+  let touchEndX = evt.changedTouches[0].clientX;
+  let touchEndY = evt.changedTouches[0].clientY;
+
+  let deltaX = touchEndX - touchStartX;
+  let deltaY = touchEndY - touchStartY;
+
+  // Reset touch coordinates
+  touchStartX = 0;
+  touchStartY = 0;
+
+  // Ignore small movements
+  if (Math.abs(deltaX) < MIN_SWIPE && Math.abs(deltaY) < MIN_SWIPE) return;
+
+  // Determine direction based on larger delta
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (deltaX > 0) {
+      right_move();
+    } else {
+      left_move();
+    }
+  } else {
+    if (deltaY > 0) {
+      lower_move();
+    } else {
+      upper_move();
+    }
+  }
+  random_num();
+  check_game();
+}
+
+document.addEventListener("touchstart", handleTouchStart, false);
+document.addEventListener("touchend", handleTouchEnd, false);
 
 document.getElementById("reset").onclick = reset;
 document.getElementsByClassName("play-again")[0].onclick = reset;
