@@ -32,7 +32,9 @@ const grow_keyframes = [
 
 let touchStartX = 0;
 let touchStartY = 0;
-const MIN_SWIPE = 30; // minimum swipe distance
+const MIN_SWIPE = 30;
+
+let tilesMoved = false;
 
 function empty() {
   let temp = 0;
@@ -119,6 +121,7 @@ function random_num() {
 }
 
 function upper_move() {
+  tilesMoved = false;
   for (let i = 0; i < 4; i++) {
     for (let j = 0; j < 4; j++) {
       if (value[j][i] == " ") {
@@ -132,6 +135,7 @@ function upper_move() {
               `${j * 4 + (i + 1)}`
             ).style = `--x: ${j};--y: ${i}`;
             value[k][i] = " ";
+            tilesMoved = true;
             break;
           }
         }
@@ -147,6 +151,7 @@ function upper_move() {
         elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
         document.getElementById(`${j * 4 + (i + 1)}`).remove();
         add += value[j + 1][i];
+        tilesMoved = true;
       }
     }
     for (let j = 0; j < 4; j++) {
@@ -161,15 +166,18 @@ function upper_move() {
             document.getElementById(
               `${j * 4 + (i + 1)}`
             ).style = `--x: ${j};--y: ${i}`;
+            tilesMoved = true;
             break;
           }
         }
       }
     }
   }
+  return tilesMoved;
 }
 
 function lower_move() {
+  tilesMoved = false;
   for (let i = 0; i < 4; i++) {
     for (let j = 3; j >= 0; j--) {
       if (value[j][i] == " ") {
@@ -183,6 +191,7 @@ function lower_move() {
               `${j * 4 + (i + 1)}`
             ).style = `--x: ${j};--y: ${i}`;
             value[k][i] = " ";
+            tilesMoved = true;
             break;
           }
         }
@@ -198,6 +207,7 @@ function lower_move() {
         elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
         document.getElementById(`${j * 4 + (i + 1)}`).remove();
         add += value[j - 1][i];
+        tilesMoved = true;
       }
     }
     for (let j = 3; j >= 0; j--) {
@@ -212,15 +222,18 @@ function lower_move() {
               `${j * 4 + (i + 1)}`
             ).style = `--x: ${j};--y: ${i}`;
             value[k][i] = " ";
+            tilesMoved = true;
             break;
           }
         }
       }
     }
   }
+  return tilesMoved;
 }
 
 function left_move() {
+  tilesMoved = false;
   for (let i = 0; i < 4; i++) {
     for (let j = 0; j < 4; j++) {
       if (value[i][j] == " ") {
@@ -234,6 +247,7 @@ function left_move() {
               `${i * 4 + (j + 1)}`
             ).style = `--x: ${i};--y: ${j}`;
             value[i][k] = " ";
+            tilesMoved = true;
             break;
           }
         }
@@ -249,6 +263,7 @@ function left_move() {
         elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
         document.getElementById(`${i * 4 + (j + 1)}`).remove();
         add += value[i][j + 1];
+        tilesMoved = true;
       }
     }
     for (let j = 0; j < 4; j++) {
@@ -263,15 +278,18 @@ function left_move() {
               `${i * 4 + (j + 1)}`
             ).style = `--x: ${i};--y: ${j}`;
             value[i][k] = " ";
+            tilesMoved = true;
             break;
           }
         }
       }
     }
   }
+  return tilesMoved;
 }
 
 function right_move() {
+  tilesMoved = false;
   for (let i = 0; i < 4; i++) {
     for (let j = 3; j >= 0; j--) {
       if (value[i][j] == " ") {
@@ -285,6 +303,7 @@ function right_move() {
               `${i * 4 + (j + 1)}`
             ).style = `--x: ${i};--y: ${j}`;
             value[i][k] = " ";
+            tilesMoved = true;
             break;
           }
         }
@@ -300,6 +319,7 @@ function right_move() {
         elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
         document.getElementById(`${i * 4 + (j + 1)}`).remove();
         add += value[i][j - 1];
+        tilesMoved = true;
       }
     }
     for (let j = 3; j >= 0; j--) {
@@ -314,12 +334,14 @@ function right_move() {
               `${i * 4 + (j + 1)}`
             ).style = `--x: ${i};--y: ${j}`;
             value[i][k] = " ";
+            tilesMoved = true;
             break;
           }
         }
       }
     }
   }
+  return tilesMoved;
 }
 
 function get_input() {
@@ -389,19 +411,13 @@ function check_game() {
 }
 
 function input(e) {
-  if (e.key === "ArrowDown") {
-    lower_move();
-    random_num();
-  } else if (e.key === "ArrowUp") {
-    upper_move();
-    random_num();
-  } else if (e.key === "ArrowLeft") {
-    left_move();
-    random_num();
-  } else if (e.key === "ArrowRight") {
-    right_move();
-    random_num();
-  }
+  let moved = false;
+  if (e.key === "ArrowDown") moved = lower_move();
+  else if (e.key === "ArrowUp") moved = upper_move();
+  else if (e.key === "ArrowLeft") moved = left_move();
+  else if (e.key === "ArrowRight") moved = right_move();
+
+  if (moved) random_num();
   check_game();
 }
 
@@ -427,20 +443,18 @@ function handleTouchEnd(evt) {
   if (Math.abs(deltaX) < MIN_SWIPE && Math.abs(deltaY) < MIN_SWIPE) return;
 
   // Determine direction based on larger delta
+  let moved = false;
   if (Math.abs(deltaX) > Math.abs(deltaY)) {
-    if (deltaX > 0) {
-      right_move();
-    } else {
-      left_move();
-    }
+    if (deltaX > 0) moved = right_move();
+    else moved = left_move();
   } else {
-    if (deltaY > 0) {
-      lower_move();
-    } else {
-      upper_move();
-    }
+    if (deltaY > 0) moved = lower_move();
+    else moved = upper_move();
   }
-  random_num();
+
+  if (moved) {
+    random_num();
+  }
   check_game();
 }
 
