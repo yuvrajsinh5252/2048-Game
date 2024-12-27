@@ -480,6 +480,11 @@ function input(e) {
 function handleTouchStart(evt) {
   touchStartX = evt.touches[0].clientX;
   touchStartY = evt.touches[0].clientY;
+  evt.preventDefault();
+}
+
+function handleTouchMove(evt) {
+  evt.preventDefault();
 }
 
 function handleTouchEnd(evt) {
@@ -512,7 +517,8 @@ function handleTouchEnd(evt) {
   check_game();
 }
 
-document.addEventListener("touchstart", handleTouchStart, false);
+document.addEventListener("touchstart", handleTouchStart, { passive: false });
+document.addEventListener("touchmove", handleTouchMove, { passive: false });
 document.addEventListener("touchend", handleTouchEnd, false);
 
 document.getElementById("reset").onclick = reset;
