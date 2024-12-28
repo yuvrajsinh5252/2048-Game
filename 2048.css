@@ -262,8 +262,7 @@ footer {
   }
   .title,
   .bottom,
-  .reset-container,
-  footer {
+  .reset-container {
     width: 280px;
   }
   .head {

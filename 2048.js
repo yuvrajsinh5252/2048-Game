@@ -496,6 +496,24 @@ function handleTouchEnd(evt) {
   let deltaX = touchEndX - touchStartX;
   let deltaY = touchEndY - touchStartY;
 
+  let target = document.elementFromPoint(touchEndX, touchEndY);
+
+  if (Math.abs(deltaX) < MIN_SWIPE && Math.abs(deltaY) < MIN_SWIPE) {
+    if (
+      (target && target.innerHTML === "New Game") ||
+      target.innerHTML === "Try Again" ||
+      target.innerHTML === "Play Again"
+    ) {
+      reset();
+      return;
+    }
+
+    if (target && target.innerHTML === "Undo") {
+      undo();
+      return;
+    }
+  }
+
   touchStartX = 0;
   touchStartY = 0;
 
