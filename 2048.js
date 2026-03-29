@@ -1,550 +1,641 @@
-let brightness = new Map();
-brightness.set("2", 85);
-brightness.set("4", 81);
-brightness.set("8", 77);
-brightness.set("16", 73);
-brightness.set("32", 69);
-brightness.set("64", 65);
-brightness.set("128", 61);
-brightness.set("256", 57);
-brightness.set("512", 53);
-brightness.set("1024", 49);
-brightness.set("2048", 45);
-
-let add = 0;
-
-if (localStorage.getItem("1") === null) localStorage.setItem("1", add);
-
-let score = localStorage.getItem("1");
-document.getElementById("Best-score").innerHTML = score;
-
-let value = [
-  [" ", " ", " ", " "],
-  [" ", " ", " ", " "],
-  [" ", " ", " ", " "],
-  [" ", " ", " ", " "],
-];
-
-const grow_keyframes = [
-  { opacity: 1, scale: 1 },
-  { opacity: 1, scale: 1.1 },
-];
-
-let touchStartX = 0;
-let touchStartY = 0;
+const GRID_SIZE = 4;
+const EMPTY = " ";
 const MIN_SWIPE = 30;
-
-let tilesMoved = false;
-
-let gameHistory = [];
 const MAX_HISTORY = 50;
+const BEST_SCORE_KEY = "best-score-2048";
+const LEGACY_BEST_KEY = "1";
+const THEME_KEY = "theme-2048";
+const MOVE_ANIMATION_MS = 170;
+
+const tilePalettes = {
+  classic: new Map([
+    ["2", { background: "#eee4da", color: "#776e65" }],
+    ["4", { background: "#ede0c8", color: "#776e65" }],
+    ["8", { background: "#f2b179", color: "#f9f6f2" }],
+    ["16", { background: "#f59563", color: "#f9f6f2" }],
+    ["32", { background: "#f67c5f", color: "#f9f6f2" }],
+    ["64", { background: "#f65e3b", color: "#f9f6f2" }],
+    ["128", { background: "#edcf72", color: "#f9f6f2" }],
+    ["256", { background: "#edcc61", color: "#f9f6f2" }],
+    ["512", { background: "#edc850", color: "#f9f6f2" }],
+    ["1024", { background: "#edc53f", color: "#f9f6f2" }],
+    ["2048", { background: "#edc22e", color: "#f9f6f2" }],
+  ]),
+  dark: new Map([
+    ["2", { background: "#4d5361", color: "#eef2ff" }],
+    ["4", { background: "#5a6378", color: "#eef2ff" }],
+    ["8", { background: "#6a4f8d", color: "#f7f2ff" }],
+    ["16", { background: "#7546a1", color: "#f9f3ff" }],
+    ["32", { background: "#8d3f9c", color: "#fff1ff" }],
+    ["64", { background: "#a13e93", color: "#fff1fa" }],
+    ["128", { background: "#b64a7f", color: "#fff3f6" }],
+    ["256", { background: "#c85e66", color: "#fff5f4" }],
+    ["512", { background: "#d2784d", color: "#fff8f2" }],
+    ["1024", { background: "#db9540", color: "#fffaf2" }],
+    ["2048", { background: "#e6b232", color: "#1e1a14" }],
+  ]),
+  ocean: new Map([
+    ["2", { background: "#d6edf6", color: "#1c5b73" }],
+    ["4", { background: "#c3e3f2", color: "#1c5b73" }],
+    ["8", { background: "#95d2ec", color: "#184f65" }],
+    ["16", { background: "#72c3e6", color: "#174a5d" }],
+    ["32", { background: "#4eb4df", color: "#113a4a" }],
+    ["64", { background: "#33a0d2", color: "#f1fbff" }],
+    ["128", { background: "#2f8fc0", color: "#f1fbff" }],
+    ["256", { background: "#2e7dad", color: "#f1fbff" }],
+    ["512", { background: "#2b6d99", color: "#f1fbff" }],
+    ["1024", { background: "#2a5f89", color: "#f1fbff" }],
+    ["2048", { background: "#24547b", color: "#f1fbff" }],
+  ]),
+};
+
+const gridContainer = document.getElementsByClassName("grid-container")[0];
+const resultOverlay = document.getElementsByClassName("result")[0];
+const resultText = document.getElementsByClassName("font-result")[0];
+const playText = document.getElementById("play");
+const scoreElement = document.getElementById("score");
+const bestScoreElement = document.getElementById("Best-score");
+const themeSelect = document.getElementById("theme-select");
+const milestoneCard = document.getElementById("milestone-card");
+const milestoneTitle = document.getElementById("milestone-title");
+const milestoneMessage = document.getElementById("milestone-message");
+
+let value = createEmptyBoard();
+let add = 0;
+let bestScore = getStoredBestScore();
+let gameOver = false;
+let highestCelebratedTile = 0;
+let gameHistory = [];
+let currentTheme = "classic";
+let touchStartX = null;
+let touchStartY = null;
+let milestoneTimeoutId = null;
+let isAnimating = false;
+let animationTimeoutId = null;
+let animationFrameId = null;
+
+function getStoredTheme() {
+  const theme = localStorage.getItem(THEME_KEY);
+  if (!theme || !(theme in tilePalettes)) return "classic";
+  return theme;
+}
+
+function setTheme(theme, { persist = true } = {}) {
+  if (!(theme in tilePalettes)) theme = "classic";
+  currentTheme = theme;
+
+  document.body.dataset.theme = theme;
+  if (themeSelect) themeSelect.value = theme;
+
+  if (persist) localStorage.setItem(THEME_KEY, theme);
+
+  if (isAnimating) clearAnimatedArtifacts();
+  renderBoard();
+}
+
+function initThemeSelector() {
+  setTheme(getStoredTheme(), { persist: false });
+
+  if (!themeSelect) return;
+  themeSelect.addEventListener("change", (event) => {
+    setTheme(event.target.value);
+  });
+}
+
+function createEmptyBoard() {
+  return Array.from({ length: GRID_SIZE }, () =>
+    Array.from({ length: GRID_SIZE }, () => EMPTY),
+  );
+}
+
+function cloneBoard(board) {
+  return board.map((row) => [...row]);
+}
+
+function toTileId(row, col) {
+  return String(row * GRID_SIZE + (col + 1));
+}
+
+function keyFromPos(row, col) {
+  return `${row}-${col}`;
+}
+
+function getStoredBestScore() {
+  const modern = Number(localStorage.getItem(BEST_SCORE_KEY) || 0);
+  const legacy = Number(localStorage.getItem(LEGACY_BEST_KEY) || 0);
+  return Math.max(
+    Number.isFinite(modern) ? modern : 0,
+    Number.isFinite(legacy) ? legacy : 0,
+  );
+}
+
+function persistBestScore() {
+  localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+  localStorage.setItem(LEGACY_BEST_KEY, String(bestScore));
+}
+
+function updateScoreUI() {
+  scoreElement.textContent = add;
+  bestScoreElement.textContent = bestScore;
+}
+
+function getTileAppearance(num) {
+  const activePalette = tilePalettes[currentTheme] || tilePalettes.classic;
+  const preset = activePalette.get(String(num));
+  if (preset) return preset;
+
+  const power = Math.log2(num);
+  if (currentTheme === "dark") {
+    const lightness = Math.max(20, 46 - (power - 11) * 2);
+    return {
+      background: `hsl(282, 42%, ${lightness}%)`,
+      color: "#fff8ff",
+    };
+  }
+
+  if (currentTheme === "ocean") {
+    const lightness = Math.max(24, 56 - (power - 11) * 2);
+    return {
+      background: `hsl(201, 58%, ${lightness}%)`,
+      color: lightness > 44 ? "#114057" : "#f1fbff",
+    };
+  }
+
+  const lightness = Math.max(16, 34 - (power - 11) * 2);
+  return {
+    background: `hsl(38, 26%, ${lightness}%)`,
+    color: "#f9f6f2",
+  };
+}
+
+function clearAnimatedArtifacts() {
+  if (animationTimeoutId) {
+    clearTimeout(animationTimeoutId);
+    animationTimeoutId = null;
+  }
+
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+
+  gridContainer
+    .querySelectorAll(".moving-tile")
+    .forEach((tile) => tile.remove());
+
+  gridContainer
+    .querySelectorAll(".tile-hidden")
+    .forEach((tile) => tile.classList.remove("tile-hidden"));
+
+  isAnimating = false;
+}
+
+function renderBoard({ spawnedCell = null, mergedCells = [] } = {}) {
+  gridContainer.querySelectorAll(".tile").forEach((tile) => tile.remove());
+
+  const mergedSet = new Set(
+    mergedCells.map(([row, col]) => keyFromPos(row, col)),
+  );
+
+  for (let row = 0; row < GRID_SIZE; row++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
+      const cell = value[row][col];
+      if (cell === EMPTY) continue;
+
+      const tile = document.createElement("div");
+      const appearance = getTileAppearance(cell);
+      tile.className = "tile";
+      tile.id = toTileId(row, col);
+      tile.textContent = String(cell);
+      tile.style = `--x: ${row}; --y: ${col}; background: ${appearance.background}; color: ${appearance.color};`;
+
+      if (spawnedCell && spawnedCell.row === row && spawnedCell.col === col) {
+        tile.classList.add("tile-new");
+      }
+
+      if (mergedSet.has(keyFromPos(row, col))) {
+        tile.classList.add("tile-merged");
+      }
+
+      gridContainer.appendChild(tile);
+    }
+  }
+}
+
+function logicalToActual(direction, fixed, logicalIndex) {
+  switch (direction) {
+    case "left":
+      return { row: fixed, col: logicalIndex };
+    case "right":
+      return { row: fixed, col: GRID_SIZE - 1 - logicalIndex };
+    case "up":
+      return { row: logicalIndex, col: fixed };
+    case "down":
+      return { row: GRID_SIZE - 1 - logicalIndex, col: fixed };
+    default:
+      return { row: fixed, col: logicalIndex };
+  }
+}
+
+function getEmptyCells() {
+  const cells = [];
+
+  for (let row = 0; row < GRID_SIZE; row++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
+      if (value[row][col] === EMPTY) cells.push([row, col]);
+    }
+  }
+
+  return cells;
+}
+
+function spawnRandomTile() {
+  const emptyCells = getEmptyCells();
+  if (emptyCells.length === 0) return null;
+
+  const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+  const spawnedValue = Math.random() < 0.1 ? 4 : 2;
+  value[row][col] = spawnedValue;
+
+  return { row, col, value: spawnedValue };
+}
+
+function applyMove(direction) {
+  const nextBoard = createEmptyBoard();
+  const movements = [];
+  const mergedCells = [];
+  let scoreGain = 0;
+  let moved = false;
+
+  for (let fixed = 0; fixed < GRID_SIZE; fixed++) {
+    const lineTokens = [];
+
+    for (let logical = 0; logical < GRID_SIZE; logical++) {
+      const pos = logicalToActual(direction, fixed, logical);
+      const cellValue = value[pos.row][pos.col];
+      if (cellValue !== EMPTY) {
+        lineTokens.push({
+          value: cellValue,
+          from: { row: pos.row, col: pos.col },
+        });
+      }
+    }
+
+    const mergedTokens = [];
+    for (let i = 0; i < lineTokens.length; i++) {
+      const current = lineTokens[i];
+      const next = lineTokens[i + 1];
+
+      if (next && current.value === next.value) {
+        const mergedValue = current.value * 2;
+        mergedTokens.push({
+          value: mergedValue,
+          origins: [current.from, next.from],
+        });
+        scoreGain += mergedValue;
+        i++;
+      } else {
+        mergedTokens.push({
+          value: current.value,
+          origins: [current.from],
+        });
+      }
+    }
+
+    for (let logical = 0; logical < mergedTokens.length; logical++) {
+      const token = mergedTokens[logical];
+      const destination = logicalToActual(direction, fixed, logical);
+      const isMerged = token.origins.length > 1;
+
+      nextBoard[destination.row][destination.col] = token.value;
+
+      if (isMerged) {
+        mergedCells.push([destination.row, destination.col]);
+      }
+
+      for (const origin of token.origins) {
+        const fromMoved =
+          origin.row !== destination.row || origin.col !== destination.col;
+
+        if (fromMoved || isMerged) {
+          movements.push({
+            from: { row: origin.row, col: origin.col },
+            to: { row: destination.row, col: destination.col },
+            value: value[origin.row][origin.col],
+          });
+        }
+
+        if (fromMoved) moved = true;
+      }
+
+      if (isMerged) moved = true;
+    }
+  }
+
+  value = nextBoard;
+  return { moved, scoreGain, movements, mergedCells };
+}
+
+function animateMove(movements, onComplete) {
+  if (movements.length === 0) {
+    onComplete();
+    return;
+  }
+
+  isAnimating = true;
+  const movingTiles = [];
+
+  for (const movement of movements) {
+    const fromTile = document.getElementById(
+      toTileId(movement.from.row, movement.from.col),
+    );
+
+    if (!fromTile) continue;
+
+    fromTile.classList.add("tile-hidden");
+
+    const movingTile = fromTile.cloneNode(true);
+    const appearance = getTileAppearance(movement.value);
+    movingTile.id = "";
+    movingTile.textContent = String(movement.value);
+    movingTile.classList.remove("tile-hidden", "tile-new", "tile-merged");
+    movingTile.classList.add("moving-tile");
+    movingTile.style = `--x: ${movement.from.row}; --y: ${movement.from.col}; background: ${appearance.background}; color: ${appearance.color};`;
+    movingTile.dataset.toRow = String(movement.to.row);
+    movingTile.dataset.toCol = String(movement.to.col);
+
+    gridContainer.appendChild(movingTile);
+    movingTiles.push(movingTile);
+  }
+
+  if (movingTiles.length === 0) {
+    clearAnimatedArtifacts();
+    onComplete();
+    return;
+  }
+
+  // Force layout so the browser has a definite "from" position before transitioning to "to".
+  // This makes slide animations reliable across engines.
+  void movingTiles[0].offsetWidth;
+
+  animationFrameId = requestAnimationFrame(() => {
+    for (const movingTile of movingTiles) {
+      movingTile.style.setProperty("--x", movingTile.dataset.toRow);
+      movingTile.style.setProperty("--y", movingTile.dataset.toCol);
+    }
+  });
+
+  animationTimeoutId = setTimeout(() => {
+    clearAnimatedArtifacts();
+    onComplete();
+  }, MOVE_ANIMATION_MS + 26);
+}
+
+function getMaxTile() {
+  let maxTile = 0;
+
+  for (let row = 0; row < GRID_SIZE; row++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
+      if (value[row][col] !== EMPTY) {
+        maxTile = Math.max(maxTile, value[row][col]);
+      }
+    }
+  }
+
+  return maxTile;
+}
+
+function noMovesLeft() {
+  if (getEmptyCells().length > 0) return false;
+
+  for (let row = 0; row < GRID_SIZE; row++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
+      const current = value[row][col];
+
+      if (col < GRID_SIZE - 1 && current === value[row][col + 1]) return false;
+      if (row < GRID_SIZE - 1 && current === value[row + 1][col]) return false;
+    }
+  }
+
+  return true;
+}
+
+function showResultOverlay(message, buttonText = "Try Again") {
+  resultText.textContent = message;
+  playText.textContent = buttonText;
+  gridContainer.style = `opacity: ${50}%`;
+  resultOverlay.style = `opacity: ${100}%; visibility: visible;`;
+  gameOver = true;
+}
+
+function hideResultOverlay() {
+  gridContainer.style = `opacity: ${100}%`;
+  resultOverlay.style = `opacity: ${0}%; visibility: hidden;`;
+}
+
+function hideMilestoneCard() {
+  milestoneCard.classList.remove("visible");
+  if (milestoneTimeoutId) {
+    clearTimeout(milestoneTimeoutId);
+    milestoneTimeoutId = null;
+  }
+}
+
+function showMilestoneCard(tile) {
+  milestoneTitle.textContent = `🎉 ${tile} reached!`;
+  milestoneMessage.textContent =
+    tile === 2048
+      ? "Awesome move! You unlocked 2048 — now keep the streak alive."
+      : `New milestone unlocked: ${tile}. Keep climbing!`;
+
+  milestoneCard.classList.add("visible");
+
+  if (milestoneTimeoutId) clearTimeout(milestoneTimeoutId);
+  milestoneTimeoutId = setTimeout(hideMilestoneCard, 2600);
+}
+
+function checkMilestoneCelebration() {
+  const maxTile = getMaxTile();
+  if (maxTile < 2048) return;
+
+  let milestone = 2048;
+  while (milestone * 2 <= maxTile) milestone *= 2;
+
+  if (milestone > highestCelebratedTile) {
+    highestCelebratedTile = milestone;
+    showMilestoneCard(milestone);
+  }
+}
 
 function saveGameState() {
-  const state = {
-    value: value.map((row) => [...row]),
-    add: add,
-    tiles: Array.from(document.getElementsByClassName("tile")).map((tile) => ({
-      id: tile.id,
-      innerHTML: tile.innerHTML,
-      style: tile.getAttribute("style"),
-    })),
+  const snapshot = {
+    value: cloneBoard(value),
+    add,
+    highestCelebratedTile,
+    gameOver,
   };
-  gameHistory.push(state);
-  if (gameHistory.length > MAX_HISTORY) {
-    gameHistory.shift();
-  }
+
+  gameHistory.push(snapshot);
+  if (gameHistory.length > MAX_HISTORY) gameHistory.shift();
 }
 
 function undo() {
-  if (gameHistory.length === 0) return;
+  if (isAnimating || gameHistory.length === 0) return;
 
   const previousState = gameHistory.pop();
-
-  value = previousState.value.map((row) => [...row]);
+  value = cloneBoard(previousState.value);
   add = previousState.add;
+  highestCelebratedTile = previousState.highestCelebratedTile || 0;
+  gameOver = previousState.gameOver || false;
 
-  const tiles = document.getElementsByClassName("tile");
-  while (tiles.length > 0) {
-    tiles[0].remove();
+  hideMilestoneCard();
+  if (!gameOver) hideResultOverlay();
+
+  renderBoard();
+  updateScoreUI();
+}
+
+function tryMove(direction) {
+  if (gameOver || isAnimating) return;
+
+  saveGameState();
+  const result = applyMove(direction);
+
+  if (!result.moved) {
+    gameHistory.pop();
+    return;
   }
 
-  const container = document.getElementsByClassName("grid-container")[0];
-  previousState.tiles.forEach((tileData) => {
-    const tile = document.createElement("div");
-    tile.setAttribute("class", "tile");
-    tile.setAttribute("id", tileData.id);
-    tile.innerHTML = tileData.innerHTML;
-    tile.setAttribute("style", tileData.style);
-    container.appendChild(tile);
+  add += result.scoreGain;
+  if (add > bestScore) {
+    bestScore = add;
+    persistBestScore();
+  }
+
+  const spawnedCell = spawnRandomTile();
+  updateScoreUI();
+
+  animateMove(result.movements, () => {
+    renderBoard({
+      spawnedCell,
+      mergedCells: result.mergedCells,
+    });
+    checkMilestoneCelebration();
+
+    if (noMovesLeft()) {
+      showResultOverlay("You Lose", "Try Again");
+    }
   });
-
-  document.getElementById("score").innerHTML = add;
-  get_input();
-}
-
-function empty() {
-  let temp = 0;
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      if (value[i][j] == " ") return true;
-    }
-  }
-  if (temp === 0) return false;
-}
-
-function is_move() {
-  let ans = 0;
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 3; j++) {
-      if (value[i][j] === value[i][j + 1] || value[j][i] === value[j + 1][i]) {
-        ans = 1;
-        return true;
-      }
-    }
-  }
-  if (ans === 0) {
-    if (!empty()) {
-      document.getElementsByClassName("font-result")[0].innerHTML = "You Lose";
-      document.getElementsByClassName(
-        "grid-container"
-      )[0].style = `opacity: ${`${50}%`}`;
-      document.getElementsByClassName(
-        "result"
-      )[0].style = `opacity: ${100}%; visibility: visible;`;
-      return false;
-    } else return true;
-  }
-}
-
-function is_win() {
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      if (value[i][j] === 2048) {
-        document.getElementById("play").innerHTML = "Play Again";
-        document.getElementsByClassName(
-          "grid-container"
-        )[0].style = `opacity: ${`${50}%`}`;
-        document.getElementsByClassName(
-          "result"
-        )[0].style = `opacity: ${100}%; visibility: visible;`;
-        return true;
-      }
-    }
-  }
-}
-
-function random_num() {
-  if (empty()) {
-    let ans = false;
-    let index_row = Math.floor(Math.random() * 4);
-    let index_col = Math.floor(Math.random() * 4);
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        if (i == index_row && j == index_col && value[i][j] == " ") {
-          let num = Math.floor(Math.random() * 5);
-          if (num <= 0.5) num = 4;
-          else num = 2;
-          value[i][j] = num;
-
-          let g1 = [];
-          g1 = document.getElementsByClassName("grid-container");
-          let g = document.createElement("div");
-          g.setAttribute("class", "tile");
-          g.setAttribute("id", `${i * 4 + (j + 1)}`);
-          g.innerHTML = num;
-          g1[0].appendChild(g);
-
-          document.getElementById(`${i * 4 + (j + 1)}`).innerHTML = num;
-          document.getElementById(
-            `${i * 4 + (j + 1)}`
-          ).style = `--x: ${i};--y: ${j}`;
-          return;
-        }
-      }
-    }
-    if (ans == false) random_num();
-  }
-}
-
-function upper_move() {
-  tilesMoved = false;
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      if (value[j][i] == " ") {
-        for (let k = j + 1; k < 4; k++) {
-          if (value[k][i] != " ") {
-            value[j][i] = value[k][i];
-            document
-              .getElementById(`${k * 4 + (i + 1)}`)
-              .setAttribute("id", `${j * 4 + (i + 1)}`);
-            document.getElementById(
-              `${j * 4 + (i + 1)}`
-            ).style = `--x: ${j};--y: ${i}`;
-            value[k][i] = " ";
-            tilesMoved = true;
-            break;
-          }
-        }
-      }
-    }
-    for (let j = 0; j < 3; j++) {
-      if (value[j][i] != " " && value[j][i] == value[j + 1][i]) {
-        value[j + 1][i] += value[j][i];
-        value[j][i] = " ";
-        let elem = document.getElementById(`${(j + 1) * 4 + (i + 1)}`);
-        elem.style = `--x: ${j};--y: ${i};`;
-        elem.innerHTML = value[j + 1][i];
-        elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
-        document.getElementById(`${j * 4 + (i + 1)}`).remove();
-        add += value[j + 1][i];
-        tilesMoved = true;
-      }
-    }
-    for (let j = 0; j < 4; j++) {
-      if (value[j][i] == " ") {
-        for (let k = j + 1; k < 4; k++) {
-          if (value[k][i] != " ") {
-            value[j][i] = value[k][i];
-            value[k][i] = " ";
-            document
-              .getElementById(`${k * 4 + (i + 1)}`)
-              .setAttribute("id", `${j * 4 + (i + 1)}`);
-            document.getElementById(
-              `${j * 4 + (i + 1)}`
-            ).style = `--x: ${j};--y: ${i}`;
-            tilesMoved = true;
-            break;
-          }
-        }
-      }
-    }
-  }
-  return tilesMoved;
-}
-
-function lower_move() {
-  tilesMoved = false;
-  for (let i = 0; i < 4; i++) {
-    for (let j = 3; j >= 0; j--) {
-      if (value[j][i] == " ") {
-        for (let k = j - 1; k >= 0; k--) {
-          if (value[k][i] != " ") {
-            value[j][i] = value[k][i];
-            document
-              .getElementById(`${k * 4 + (i + 1)}`)
-              .setAttribute("id", `${j * 4 + (i + 1)}`);
-            document.getElementById(
-              `${j * 4 + (i + 1)}`
-            ).style = `--x: ${j};--y: ${i}`;
-            value[k][i] = " ";
-            tilesMoved = true;
-            break;
-          }
-        }
-      }
-    }
-    for (let j = 3; j > 0; j--) {
-      if (value[j][i] != " " && value[j][i] == value[j - 1][i]) {
-        value[j - 1][i] += value[j][i];
-        value[j][i] = " ";
-        let elem = document.getElementById(`${(j - 1) * 4 + (i + 1)}`);
-        elem.style = `--x: ${j - 1};--y: ${i}`;
-        elem.innerHTML = value[j - 1][i];
-        elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
-        document.getElementById(`${j * 4 + (i + 1)}`).remove();
-        add += value[j - 1][i];
-        tilesMoved = true;
-      }
-    }
-    for (let j = 3; j >= 0; j--) {
-      if (value[j][i] == " ") {
-        for (let k = j - 1; k >= 0; k--) {
-          if (value[k][i] != " ") {
-            value[j][i] = value[k][i];
-            document
-              .getElementById(`${k * 4 + (i + 1)}`)
-              .setAttribute("id", `${j * 4 + (i + 1)}`);
-            document.getElementById(
-              `${j * 4 + (i + 1)}`
-            ).style = `--x: ${j};--y: ${i}`;
-            value[k][i] = " ";
-            tilesMoved = true;
-            break;
-          }
-        }
-      }
-    }
-  }
-  return tilesMoved;
-}
-
-function left_move() {
-  tilesMoved = false;
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      if (value[i][j] == " ") {
-        for (let k = j + 1; k < 4; k++) {
-          if (value[i][k] != " ") {
-            value[i][j] = value[i][k];
-            document
-              .getElementById(`${i * 4 + (k + 1)}`)
-              .setAttribute("id", `${i * 4 + (j + 1)}`);
-            document.getElementById(
-              `${i * 4 + (j + 1)}`
-            ).style = `--x: ${i};--y: ${j}`;
-            value[i][k] = " ";
-            tilesMoved = true;
-            break;
-          }
-        }
-      }
-    }
-    for (let j = 0; j < 3; j++) {
-      if (value[i][j] != " " && value[i][j] == value[i][j + 1]) {
-        value[i][j + 1] += value[i][j];
-        value[i][j] = " ";
-        let elem = document.getElementById(`${i * 4 + (j + 2)}`);
-        elem.style = `--x: ${i};--y: ${j + 1}`;
-        elem.innerHTML = value[i][j + 1];
-        elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
-        document.getElementById(`${i * 4 + (j + 1)}`).remove();
-        add += value[i][j + 1];
-        tilesMoved = true;
-      }
-    }
-    for (let j = 0; j < 4; j++) {
-      if (value[i][j] == " ") {
-        for (let k = j + 1; k < 4; k++) {
-          if (value[i][k] != " ") {
-            value[i][j] = value[i][k];
-            document
-              .getElementById(`${i * 4 + (k + 1)}`)
-              .setAttribute("id", `${i * 4 + (j + 1)}`);
-            document.getElementById(
-              `${i * 4 + (j + 1)}`
-            ).style = `--x: ${i};--y: ${j}`;
-            value[i][k] = " ";
-            tilesMoved = true;
-            break;
-          }
-        }
-      }
-    }
-  }
-  return tilesMoved;
-}
-
-function right_move() {
-  tilesMoved = false;
-  for (let i = 0; i < 4; i++) {
-    for (let j = 3; j >= 0; j--) {
-      if (value[i][j] == " ") {
-        for (let k = j - 1; k >= 0; k--) {
-          if (value[i][k] != " ") {
-            value[i][j] = value[i][k];
-            document
-              .getElementById(`${i * 4 + (k + 1)}`)
-              .setAttribute("id", `${i * 4 + (j + 1)}`);
-            document.getElementById(
-              `${i * 4 + (j + 1)}`
-            ).style = `--x: ${i};--y: ${j}`;
-            value[i][k] = " ";
-            tilesMoved = true;
-            break;
-          }
-        }
-      }
-    }
-    for (let j = 3; j > 0; j--) {
-      if (value[i][j] != " " && value[i][j] == value[i][j - 1]) {
-        value[i][j - 1] += value[i][j];
-        value[i][j] = " ";
-        let elem = document.getElementById(`${i * 4 + j}`);
-        elem.style = `--x: ${i};--y: ${j - 1}`;
-        elem.innerHTML = value[i][j - 1];
-        elem.animate(grow_keyframes, { duration: 200, iterations: 1 });
-        document.getElementById(`${i * 4 + (j + 1)}`).remove();
-        add += value[i][j - 1];
-        tilesMoved = true;
-      }
-    }
-    for (let j = 3; j >= 0; j--) {
-      if (value[i][j] == " ") {
-        for (let k = j - 1; k >= 0; k--) {
-          if (value[i][k] != " ") {
-            value[i][j] = value[i][k];
-            document
-              .getElementById(`${i * 4 + (k + 1)}`)
-              .setAttribute("id", `${i * 4 + (j + 1)}`);
-            document.getElementById(
-              `${i * 4 + (j + 1)}`
-            ).style = `--x: ${i};--y: ${j}`;
-            value[i][k] = " ";
-            tilesMoved = true;
-            break;
-          }
-        }
-      }
-    }
-  }
-  return tilesMoved;
-}
-
-function get_input() {
-  window.addEventListener("keydown", input, { once: true });
-}
-
-function get_tiles_colored() {
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      let element = document.getElementById(`${i * 4 + (j + 1)}`);
-      if (element != null) {
-        let color = brightness.get(element.innerHTML);
-        document.getElementById(
-          `${i * 4 + (j + 1)}`
-        ).style = `background: hsl(180, 80%, ${color}%);--x: ${i};--y: ${j}`;
-      }
-    }
-  }
 }
 
 function reset() {
-  value = [
-    [" ", " ", " ", " "],
-    [" ", " ", " ", " "],
-    [" ", " ", " ", " "],
-    [" ", " ", " ", " "],
-  ];
-  for (let i = 1; i <= 16; i++) {
-    let remov_ele = document.getElementById(`${i}`);
-    if (remov_ele != null) {
-      remov_ele.remove();
-    }
-  }
-  if (localStorage.getItem("1") < add) {
-    localStorage.setItem("1", add);
-  }
-  document.getElementById("score").innerHTML = 0;
+  clearAnimatedArtifacts();
+
+  value = createEmptyBoard();
   add = 0;
-  let score = localStorage.getItem("1");
-  document.getElementById("Best-score").innerHTML = score;
-  document.getElementsByClassName(
-    "grid-container"
-  )[0].style = `opacity: ${`${100}%`}`;
-  document.getElementsByClassName(
-    "result"
-  )[0].style = `opacity: ${0}%; visibility: hidden;`;
-  random_num();
-  random_num();
-  get_tiles_colored();
-  get_input();
+  gameOver = false;
+  highestCelebratedTile = 0;
+  gameHistory = [];
+
+  hideResultOverlay();
+  hideMilestoneCard();
+
+  spawnRandomTile();
+  spawnRandomTile();
+
+  renderBoard();
+  updateScoreUI();
 }
 
-random_num();
-random_num();
-get_tiles_colored();
-get_input();
-
-function check_game() {
-  get_tiles_colored();
-  document.getElementById("score").innerHTML = add;
-  if (localStorage.getItem("1", add) < add) {
-    document.getElementById("Best-score").innerHTML = add;
-  }
-  if (!is_win() && is_move()) {
-    get_input();
-  }
-}
-
-function input(e) {
-  let moved = false;
-  if (
-    e.key === "ArrowDown" ||
-    e.key === "ArrowUp" ||
-    e.key === "ArrowLeft" ||
-    e.key === "ArrowRight"
-  ) {
-    saveGameState();
+function handleKeyboardInput(event) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+    event.preventDefault();
+    undo();
+    return;
   }
 
-  if (e.key === "ArrowDown") moved = lower_move();
-  else if (e.key === "ArrowUp") moved = upper_move();
-  else if (e.key === "ArrowLeft") moved = left_move();
-  else if (e.key === "ArrowRight") moved = right_move();
+  const directionByKey = {
+    ArrowUp: "up",
+    ArrowDown: "down",
+    ArrowLeft: "left",
+    ArrowRight: "right",
+  };
 
-  if (!moved) gameHistory.pop();
-  else random_num();
-  check_game();
+  const direction = directionByKey[event.key];
+  if (!direction) return;
+
+  event.preventDefault();
+  tryMove(direction);
 }
 
-function handleTouchStart(evt) {
-  touchStartX = evt.touches[0].clientX;
-  touchStartY = evt.touches[0].clientY;
-  evt.preventDefault();
+function handleTouchStart(event) {
+  if (event.touches.length !== 1) return;
+  touchStartX = event.touches[0].clientX;
+  touchStartY = event.touches[0].clientY;
+  event.preventDefault();
 }
 
-function handleTouchMove(evt) {
-  evt.preventDefault();
+function handleTouchMove(event) {
+  event.preventDefault();
 }
 
-function handleTouchEnd(evt) {
-  if (!touchStartX || !touchStartY) return;
+function handleTouchEnd(event) {
+  if (touchStartX === null || touchStartY === null) return;
 
-  let touchEndX = evt.changedTouches[0].clientX;
-  let touchEndY = evt.changedTouches[0].clientY;
+  const touchEndX = event.changedTouches[0].clientX;
+  const touchEndY = event.changedTouches[0].clientY;
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+  const shortSwipe =
+    Math.abs(deltaX) < MIN_SWIPE && Math.abs(deltaY) < MIN_SWIPE;
 
-  let deltaX = touchEndX - touchStartX;
-  let deltaY = touchEndY - touchStartY;
+  if (shortSwipe) {
+    const target =
+      event.target instanceof Element
+        ? event.target
+        : document.elementFromPoint(touchEndX, touchEndY);
+    const button = target ? target.closest("button") : null;
 
-  let target = document.elementFromPoint(touchEndX, touchEndY);
-
-  if (Math.abs(deltaX) < MIN_SWIPE && Math.abs(deltaY) < MIN_SWIPE) {
-    if (
-      (target && target.innerHTML === "New Game") ||
-      target.innerHTML === "Try Again" ||
-      target.innerHTML === "Play Again"
-    ) {
-      reset();
-      return;
+    if (button) {
+      if (button.id === "reset" || button.classList.contains("play-again")) {
+        reset();
+      } else if (button.id === "undo") {
+        undo();
+      } else if (button.id === "continue-play") {
+        hideMilestoneCard();
+      }
     }
 
-    if (target && target.innerHTML === "Undo") {
-      undo();
-      return;
-    }
+    touchStartX = null;
+    touchStartY = null;
+    return;
   }
 
-  touchStartX = 0;
-  touchStartY = 0;
-
-  if (Math.abs(deltaX) < MIN_SWIPE && Math.abs(deltaY) < MIN_SWIPE) return;
-
-  saveGameState();
-
-  let moved = false;
   if (Math.abs(deltaX) > Math.abs(deltaY)) {
-    if (deltaX > 0) moved = right_move();
-    else moved = left_move();
+    tryMove(deltaX > 0 ? "right" : "left");
   } else {
-    if (deltaY > 0) moved = lower_move();
-    else moved = upper_move();
+    tryMove(deltaY > 0 ? "down" : "up");
   }
 
-  if (!moved) gameHistory.pop();
-  else random_num();
-  check_game();
+  touchStartX = null;
+  touchStartY = null;
 }
 
+document.addEventListener("keydown", handleKeyboardInput);
 document.addEventListener("touchstart", handleTouchStart, { passive: false });
 document.addEventListener("touchmove", handleTouchMove, { passive: false });
-document.addEventListener("touchend", handleTouchEnd, false);
+document.addEventListener("touchend", handleTouchEnd, { passive: false });
 
-document.getElementById("reset").onclick = reset;
-document.getElementsByClassName("play-again")[0].onclick = reset;
+document.getElementById("reset").addEventListener("click", reset);
+document
+  .getElementsByClassName("play-again")[0]
+  .addEventListener("click", reset);
+document.getElementById("undo").addEventListener("click", undo);
+document
+  .getElementById("continue-play")
+  .addEventListener("click", hideMilestoneCard);
 
-document.addEventListener("keydown", function (e) {
-  if (e.ctrlKey && e.key === "z") {
-    undo();
-    e.preventDefault();
-  }
-});
+gridContainer.style.setProperty("--move-duration", `${MOVE_ANIMATION_MS}ms`);
+persistBestScore();
+initThemeSelector();
+reset();

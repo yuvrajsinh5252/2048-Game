@@ -42,16 +42,22 @@
             <div class="item"></div>
         </div>
         <div class="result">
-            <h1 class="font-result">You Win</h1>
+            <h1 class="font-result">You Lose</h1>
             <div class="play-button"><button class="play-again">
                     <h3 id="play">Try Again</h3>
                 </button></div>
         </div>
     </div>
+    <div class="milestone-card" id="milestone-card" aria-live="polite" aria-atomic="true">
+        <h2 id="milestone-title">🎉 2048 reached!</h2>
+        <p id="milestone-message">Awesome move! Keep going until no more moves are possible.</p>
+        <button id="continue-play" type="button">Continue</button>
+    </div>
     <div class="bottom">
         <div><span class="h3">How to play:</span>
-            <span class="instruct">Use your arrow key to move the tiles,tiles with same value will get merge,
-                get <span class="bold">2048</span> on anyone tile and win.
+            <span class="instruct">Use your <span class="bold">arrow keys</span> to move the tiles. Tiles with the
+                same value merge together. Reach <span class="bold">2048</span> for a celebration, then keep going until
+                you run out of moves.
             </span>
         </div>
     </div>
@@ -59,7 +65,15 @@
         <button class="reset" id="reset">
             <h2>New Game</h2>
         </button>
-        <button id="undo" onclick="undo()">Undo</button>
+        <div class="theme-switcher">
+            <label for="theme-select">Theme</label>
+            <select id="theme-select" aria-label="Select game theme">
+                <option value="classic">Classic</option>
+                <option value="dark">Dark</option>
+                <option value="ocean">Ocean</option>
+            </select>
+        </div>
+        <button id="undo">Undo</button>
     </div>
     <div class="links">
         <a href="https://github.com/yuvrajsinh5252" target="_blank"><img
